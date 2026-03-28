@@ -1,7 +1,8 @@
 import os
 import pandas as pd
 import time
-from datetime import datetime
+from datetime import datetime, time as dtime
+import pytz
 
 from dotenv import load_dotenv
 from alpaca_trade_api.rest import TimeFrame, TimeFrameUnit
@@ -225,6 +226,29 @@ nivel_martingala = 0
 MAX_MARTINGALA   = 2
 MULT             = 2
 
+ET = pytz.timezone("America/New_York")
+
+
+# ==============================
+# FILTRO DE HORARIO (Wall Street)
+# ==============================
+def mercado_abierto():
+    """
+    Wall Street abre Lun-Vie 9:30am - 4:00pm ET.
+    Dejamos de operar a las 3:50pm para evitar \u00f3rdenes en el cierre.
+    """
+    ahora = datetime.now(ET)
+
+    # Fin de semana
+    if ahora.weekday() >= 5:  # 5=S\u00e1bado, 6=Domingo
+        return False
+
+    hora = ahora.time()
+    apertura = dtime(9, 30)
+    cierre   = dtime(15, 50)   # 10 min antes del cierre oficial
+
+    return apertura <= hora <= cierre
+
 
 # ==============================
 # EJECUTAR ORDEN (TP/SL correcto para CALL y PUT)
@@ -275,7 +299,17 @@ def ejecutar_orden(ticker, tipo, capital):
 # ESTRATEGIA PRINCIPAL
 # ==============================
 def ejecutar_estrategia():
-    print(f"\n📊 Escaneando mercado... {datetime.now().strftime('%H:%M:%S')}")
+    ahora_et = datetime.now(ET).strftime('%H:%M:%S ET')
+    print(f"\n⏰ {ahora_et} | Verificando mercado...")
+
+    # Filtro de horario: solo operar cuando Wall Street está abierto
+    if not mercado_abierto():
+        ahora_et_full = datetime.now(ET)
+        dia = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"][ahora_et_full.weekday()]
+        print(f"🚫 Mercado cerrado ({dia} {ahora_et}) | Abre Lun-Vie 9:30am ET")
+        return
+
+    print(f"\n📊 Escaneando {len(ACCIONES_VIP)} tickers... {ahora_et}")
 
     # Control de riesgo global (límite trades, drawdown máximo, posiciones)
     if not puede_operar():
