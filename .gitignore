@@ -1,0 +1,46 @@
+# ================================
+# PYTHON
+# ================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ================================
+# ENTORNO VIRTUAL
+# ================================
+venv/
+.venv/
+env/
+ENV/
+.env/
+
+# ================================
+# SECRETOS (NUNCA SUBIR AL REPO)
+# ================================
+.env
+*.env
+!.env.example
+
+# ================================
+# SISTEMA OPERATIVO
+# ================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ================================
+# EDITORES
+# ================================
+.vscode/
+.idea/
+*.swp
+*.swo
