@@ -373,6 +373,8 @@ def ejecutar_estrategia():
 
         except Exception as e:
             print(f"❌ Error en {ticker}: {e}")
+        finally:
+            time.sleep(0.3)  # ← 0.3s entre tickers = 1000 tickers en ~5 min (rate limit safe)
 
 
 # ==============================
@@ -436,8 +438,8 @@ def loop():
         try:
             ejecutar_estrategia()
             actualizar_martingala()
-            print(f"\n⏳ Próximo ciclo en 5 minutos...\n")
-            time.sleep(300)
+            # No sleep(300): el delay de 0.3s por ticker hace que el ciclo
+            # dure ~5 minutos naturalmente con 1000 tickers
 
         except KeyboardInterrupt:
             print("\n🛑 Bot detenido por el usuario.")
