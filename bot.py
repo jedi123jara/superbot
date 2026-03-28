@@ -17,15 +17,197 @@ from risk_manager import puede_operar, registrar_trade, inicializar_dia
 load_dotenv()
 
 ACCIONES_VIP = [
-    "AAPL","MSFT","GOOGL","AMZN","META","TSLA","NVDA","JPM","V",
-    "AMD","AVGO","TSM","MU","INTC","QCOM","TXN",
-    "CRM","ADBE","ORCL","NOW",
-    "MA","PYPL","COIN","SOFI",
-    "WMT","COST","HD",
-    "XOM","CVX",
-    "JNJ","PFE","UNH",
-    "DIS","NFLX",
-    "SPY","QQQ"
+    # Los 10 Titanes (Indispensables)
+    "AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA", "BRK.B", "JPM", "V",
+    # Semiconductores (Tu zona de mayor profit)
+    "AMD", "AVGO", "TSM", "MU", "INTC", "QCOM", "TXN", "AMAT", "LRCX", "ADI",
+    # Ciberseguridad y Cloud
+    "PANW", "CRWD", "FTNT", "OKTA", "ZS", "DDOG", "NET", "SNOW", "PLTR",
+    # Software e IA
+    "CRM", "ADBE", "ORCL", "SAP", "NOW", "WDAY", "TEAM", "ADSK", "PLTR", "IBM",
+    # Fintech y Pagos
+    "MA", "PYPL", "SQ", "COIN", "HOOD", "AFRM", "SOFI", "SHOP", "SPOT", "MELI",
+    # Consumo y Retail
+    "WMT", "COST", "TGT", "HD", "LOW", "NKE", "SBUX", "MCD", "PEP", "KO",
+    # Energía y Materiales
+    "XOM", "CVX", "OXY", "SLB", "COP", "FCX", "NUE", "AA", "NEM", "GOLD",
+    # Salud y Biotech
+    "JNJ", "PFE", "MRNA", "UNH", "ABT", "LLY", "ABBV", "BMY", "GILD", "AMGN",
+    # Entretenimiento y Comunicaciones
+    "DIS", "NFLX", "TMUS", "VZ", "T", "CMCSA", "PARA", "WBD", "ROKU", "UBER",
+    # ETFs (Para suavizar la curva de capital)
+    "SPY", "QQQ", "IWM", "DIA", "SMH", "SOXX", "XLF", "XLV", "XLE", "ARKK",
+    # Industriales y Aeroespacial (Movimientos pesados y claros)
+    "GE", "HON", "MMM", "UNP", "UPS", "FDX", "DE", "CAT", "LMT", "GD", 
+    "NOC", "RTX", "BA", "EMR", "ETN", "ITW", "PH", "AME", "DOV", "XYL",
+    
+    # Consumo Discrecional y Retail (Volatilidad por reportes)
+    "SBUX", "NKE", "TGT", "TJX", "ROST", "MAR", "HLT", "BKNG", "EXPE", "LULU",
+    "ULTA", "BBY", "LOW", "TSCO", "ORLY", "AZO", "GME", "AMC", "EBAY", "ETSY",
+    
+    # Finanzas y Bancos Regionales (Sensibles a tasas)
+    "BAC", "GS", "MS", "C", "BLK", "TROW", "SCHW", "PNC", "USB", "CMA",
+    "FITB", "HBAN", "KEY", "RF", "ZION", "TFC", "SYF", "DFS", "AXP", "COF",
+    
+    # Energía, Minería y Materiales (Ciclos de RSI muy marcados)
+    "SLB", "HAL", "MPC", "PSX", "VLO", "HES", "DVN", "FANG", "MRO", "APA",
+    "FCX", "NEM", "NUE", "STLD", "RS", "CLF", "X", "AA", "CENX", "VALE",
+    
+    # Salud, Pharma y Biotech (Mid-Cap)
+    "CVS", "CI", "HUM", "HCA", "SYK", "ZTS", "IDXX", "IQV", "EW", "BSX",
+    "MDT", "ISRG", "DXCM", "ALGN", "VRTX", "REGN", "BIIB", "ILMN", "TMO", "A",
+    # Bienes Raíces / REITs (Dividendos y Ciclos Claros)
+    "O", "SPG", "PLD", "AMT", "CCI", "EQIX", "DLR", "PSA", "WY", "AVB", 
+    "EQR", "CPT", "MAA", "ESS", "UDR", "SUI", "ELS", "INVH", "AMH", "VICI",
+    
+    # Servicios Públicos / Utilities (Seguridad y Rebotes de RSI)
+    "NEE", "DUK", "SO", "D", "AEP", "EXC", "XEL", "ED", "PEG", "WEC", 
+    "ES", "AWK", "EIX", "ETR", "FE", "PPL", "AEE", "CMS", "CNP", "LNT",
+    
+    # Consumo Básico (Defensivas para el interés compuesto)
+    "K", "GIS", "CAG", "SJM", "CPB", "HRL", "TSN", "TAP", "KR", "SFM", 
+    "WBA", "CHD", "CLX", "HSY", "MKC", "ADM", "STZ", "MNST", "KMB", "EL",
+    
+    # Transporte, Logística y Automotriz
+    "NSC", "CSX", "FDX", "UPS", "JBHT", "ODFL", "KNX", "SNDR", "ARCB", "SAIA",
+    "F", "GM", "STLA", "RIVN", "LCID", "HMC", "TM", "PCAR", "ALSN", "TEX",
+    
+    # Materiales, Construcción y Químicos
+    "SHW", "PPG", "APD", "LIN", "ECL", "VMC", "MLM", "DHI", "LEN", "PHM",
+    "NVR", "TOL", "KBH", "MTH", "MDC", "TMHC", "GRBK", "LGIH", "CCS", "WLK",
+    # Lujo y Estilo de Vida (Alta volatilidad, rebotes técnicos)
+    "LVMUY", "RMSFY", "ORLY", "RL", "CPRI", "TPR", "EL", "TIF", "SIG", "VFC",
+    "ONON", "SKX", "DECK", "PINS", "SNAP", "EBAY", "ETSY", "CHWY", "RVLV", "U",
+    
+    # Tecnología Emergente e Inteligencia Artificial
+    "AI", "PLTR", "SNOW", "PATH", "C3AI", "SOUN", "BBAI", "RGTI", "IONQ", "GWRE",
+    "SENT", "SPLK", "DT", "ESTC", "MDB", "DDOG", "OKTA", "ZS", "CRWD", "PANW",
+    
+    # Servicios Financieros y Fintech (Movimientos rápidos)
+    "HOOD", "SOFI", "AFRM", "UPST", "LC", "MQ", "NU", "PAGS", "STONE", "MELI",
+    "SE", "TME", "BILI", "IQ", "PDD", "JD", "BABA", "TCEHY", "NTES", "DIDY",
+    
+    # Hospitalidad, Viajes y Casinos
+    "ABNB", "BKNG", "EXPE", "TRIP", "TCOM", "HLT", "MAR", "H", "WH", "CHH",
+    "MGM", "WYNN", "LVS", "PENN", "CZR", "DKNG", "RCL", "CCL", "NCLH", "DAL",
+    
+    # Gaming, Medios y Entretenimiento
+    "RBLX", "EA", "TTWO", "MTCH", "BMBL", "SPOT", "NFLX", "DIS", "WBD", "PARA",
+    "LYV", "SIRI", "AMC", "CNK", "IMAX", "NYT", "NWSA", "FOXA", "WMG", "SONY",
+    # Biotecnología y Farmacéuticas (Volatilidad pura)
+    "VRTX", "REGN", "BIIB", "ILMN", "SGEN", "ALNY", "BMRN", "SRPT", "INSM", "HALO",
+    "RNA", "CRSP", "NTLA", "EDIT", "BEAM", "PACB", "EXAS", "NVAX", "CVAC", "BHC",
+    
+    # Seguros y Servicios Financieros (Estables y técnicos)
+    "AFL", "ALL", "TRV", "PGR", "CB", "CINF", "HIG", "LNC", "PFG", "GL",
+    "AIZ", "RE", "RGA", "UNM", "AIG", "BHF", "CRBG", "EQH", "VOYA", "L",
+    
+    # Hardware, Almacenamiento y Periféricos
+    "STX", "WDC", "HPQ", "HPE", "NTAP", "PSTG", "WOLF", "RMBS", "LSCC", "SLAB",
+    "CRUS", "SYNA", "DIOD", "POWI", "FORM", "ACLS", "AEHR", "TER", "ENTG", "MKSI",
+    
+    # Hospitales y Servicios de Salud
+    "HCA", "THC", "UHS", "CYH", "ACHC", "SEM", "EHC", "AMN", "CHH", "ENSG",
+    "DVA", "CNC", "MOH", "OSCR", "ALHC", "CLOV", "BHG", "AMED", "OPCH", "AGL",
+    
+    # Química Especializada y Fertilizantes
+    "CF", "MOS", "NTR", "ICL", "SMG", "AVNT", "HUN", "OLN", "CC", "NEU",
+    "ASH", "KRO", "FMC", "CTVA", "ALB", "LTHM", "SQM", "SGML", "LAC", "MP",
+    # Infraestructura y Construcción de Maquinaria
+    "CAT", "DE", "PCAR", "CMI", "TEX", "OSK", "ALSN", "AGCO", "FLS", "ITT",
+    "IR", "PNR", "AOS", "XYL", "NDSN", "DOV", "AME", "ROK", "EMR", "ETN",
+    
+    # Retail Especializado y Ropa (Movimientos estacionales fuertes)
+    "GPS", "ANF", "AEO", "URBN", "JWN", "M", "KSS", "DDS", "BURL", "DG",
+    "DLTR", "FIVE", "PLNT", "BOOT", "YETI", "SKX", "DECK", "ONON", "CROX", "NKE",
+    
+    # Servicios Profesionales y Consultoría
+    "ACN", "CTSH", "INFY", "WIT", "EPAM", "GLOB", "G", "BAH", "CACI", "SAIC",
+    "LDOS", "LEIDOS", "KBR", "ACM", "AECOM", "TTEK", "VRSK", "EFX", "TRU", "SPGI",
+    
+    # Semiconductores de Nicho y Electrónica
+    "WOLF", "RMBS", "LSCC", "SLAB", "CRUS", "SYNA", "DIOD", "POWI", "FORM", "ACLS",
+    "AEHR", "KLAC", "LRCX", "AMAT", "TER", "ENTG", "MKSI", "COHR", "ONTO", "CAMT",
+    
+    # Consumo de Alimentos y Bebidas (Nuevos Tickers)
+    "CAVA", "SG", "LOCO", "SHAK", "WEN", "QSR", "DPZ", "PZZA", "TXRH", "BLMN",
+    "DENN", "DIN", "CAKE", "PLAY", "EAT", "DRI", "CELH", "MNST", "KDP", "STZ",
+    # Software como Servicio (SaaS) y Cloud (Alta volatilidad)
+    "DOCN", "DBX", "BOX", "ZEN", "NEWR", "PD", "DT", "ESTC", "MNDY", "ASAN",
+    "SMAR", "PATH", "SNOW", "PLTR", "DDOG", "OKTA", "ZS", "CRWD", "PANW", "FTNT",
+    
+    # Hardware de Redes y Telecomunicaciones
+    "CSCO", "JNPR", "ANET", "FFIV", "AKAM", "NET", "FSLY", "CIEN", "LITE", "VIAV",
+    "EXTR", "ADTN", "CALX", "MSI", "STNE", "PAGS", "MELI", "SE", "TME", "BILI",
+    
+    # Datos, Análisis y Consultoría Tecnológica
+    "MCO", "SPGI", "MSCI", "INFO", "EPAM", "GLOB", "G", "ACN", "CTSH", "INFY",
+    "WIT", "TCS", "CDW", "STX", "WDC", "HPQ", "HPE", "NTAP", "PSTG", "PURE",
+    
+    # Química Industrial y Materiales de Construcción
+    "LIN", "APD", "ECL", "SHW", "PPG", "VMC", "MLM", "DHI", "LEN", "PHM",
+    "NVR", "TOL", "KBH", "MTH", "MDC", "TMHC", "GRBK", "LGIH", "CCS", "WLK",
+    
+    # Farmacéuticas de Crecimiento y Salud
+    "VRTX", "REGN", "BIIB", "ILMN", "IDXX", "IQV", "EW", "BSX", "MDT", "ISRG",
+    "DXCM", "ALGN", "ZTS", "HCA", "THC", "UHS", "CYH", "ACHC", "SEM", "EHC",
+    # Energía y Servicios de Campo Petrolero (Alta volatilidad técnica)
+    "BKR", "HAL", "SLB", "OVV", "MRO", "HES", "DVN", "FANG", "CTRA", "EQT",
+    "TRGP", "WMB", "OKE", "KMI", "ET", "MPLX", "PAA", "PAGP", "AM", "CHRD",
+    
+    # Semiconductores de Equipo y Manufactura (Técnicos y precisos)
+    "ASML", "LRCX", "AMAT", "KLAC", "TER", "ONTW", "MKSI", "ENTG", "COHR", "CAMT",
+    "UCTT", "ICHR", "AEHR", "ACLS", "FORM", "POWI", "DIOD", "SYNA", "CRUS", "SLAB",
+    
+    # Consumo Masivo, Alimentos y Bebidas
+    "MDLZ", "KDP", "STZ", "MNST", "KMB", "HSY", "CLX", "GIS", "K", "STT",
+    "ADM", "SYY", "SYCO", "USFD", "PFGC", "CORE", "UNFI", "SFM", "KR", "WBA",
+    
+    # Transporte Marítimo, Ferroviario y Logística
+    "UNP", "CSX", "NSC", "CP", "CNI", "KSU", "FDX", "UPS", "EXPD", "CHRW",
+    "JBHT", "ODFL", "KNX", "SNDR", "ARCB", "SAIA", "ZIM", "SBLK", "GNK", "EGLE",
+    
+    # Hardware, Redes y Servicios IT Especializados
+    "IBM", "ORCL", "CSCO", "JNPR", "ANET", "FFIV", "AKAM", "NET", "FSLY", "CIEN",
+    "LITE", "VIAV", "EXTR", "ADTN", "CALX", "MSI", "TEL", "APH", "GLW", "STX",
+    # Defensa y Aeroespacial (Contratos de largo plazo, RSI estable)
+    "LMT", "RTX", "GD", "NOC", "HII", "LHX", "LDOS", "BAH", "CACI", "SAIC",
+    "KTOS", "SPCE", "RKLB", "ASTS", "PL", "LUNR", "LLAP", "TDY", "TXT", "WWD",
+    
+    # Ciberseguridad y Protección de Datos (Alta volatilidad)
+    "PANW", "CRWD", "FTNT", "OKTA", "ZS", "DDOG", "NET", "SNOW", "PLTR", "S",
+    "CYBR", "CHKP", "TENB", "VRNS", "QLYS", "RAPT", "GEN", "QLYS", "RDWR", "AKAM",
+    
+    # Semiconductores de Potencia y Análogos
+    "WOLF", "RMBS", "LSCC", "SLAB", "CRUS", "SYNA", "DIOD", "POWI", "FORM", "ACLS",
+    "AEHR", "KLAC", "LRCX", "AMAT", "TER", "ENTG", "MKSI", "COHR", "ONTO", "CAMT",
+    
+    # Servicios Financieros Digitales y Exchanges
+    "ICE", "CBOE", "NDAQ", "CME", "MKTX", "MSCI", "SPGI", "INFO", "COIN", "HOOD",
+    "SOFI", "AFRM", "UPST", "LC", "MQ", "NU", "PAGS", "STONE", "MELI", "SE",
+    
+    # Hardware de Almacenamiento y Redes Enterprise
+    "STX", "WDC", "HPQ", "HPE", "NTAP", "PSTG", "PURE", "ANET", "CSCO", "JNPR",
+    "FFIV", "FSLY", "CIEN", "LITE", "VIAV", "EXTR", "ADTN", "CALX", "MSI", "TEL",
+    # Especialidades Médicas y Diagnóstico
+    "IDXX", "IQV", "A", "MTD", "WAT", "RVTY", "DGX", "LH", "CRL", "BIO",
+    "TECH", "WST", "STE", "TFX", "ZBH", "SYK", "BSX", "EW", "MDT", "ISRG",
+    
+    # Retail de Descuento y Consumo Defensivo
+    "DLTR", "DG", "FIVE", "BURL", "TJX", "ROST", "M", "JWN", "KSS", "AEO",
+    "ANF", "GPS", "URBN", "ULTA", "EL", "CLX", "CHD", "KMB", "HSY", "MKC",
+    
+    # Construcción, Materiales y Maquinaria Pesada
+    "VMC", "MLM", "EXP", "SUM", "CRH", "NUE", "STLD", "RS", "CLF", "X",
+    "AA", "CENX", "FCX", "NEM", "GOLD", "AEM", "FNV", "WPM", "PAAS", "MAG",
+    
+    # Servicios de Infraestructura y Energía Especializada
+    "PWR", "EME", "MTZ", "ACM", "AECOM", "TTEK", "VRSK", "EFX", "TRU", "SPGI",
+    "MCO", "NDAQ", "CBOE", "ICE", "CME", "MKTX", "FDS", "MSCI", "JKHY", "FISV",
+    
+    # Automotriz Especializada y Componentes
+    "APTV", "BWA", "ALV", "LEA", "MGA", "GT", "TEL", "APH", "GLW", "STX",
+    "WDC", "HPQ", "HPE", "NTAP", "PSTG", "PURE", "ANET", "CSCO", "JNPR", "FFIV"
 ]
 
 # ==============================
