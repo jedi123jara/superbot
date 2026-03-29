@@ -17,7 +17,7 @@ from risk_manager import puede_operar, registrar_trade, inicializar_dia
 # ==============================
 load_dotenv()
 
-ACCIONES_VIP = [
+_ACCIONES_VIP_RAW = [
     # Los 10 Titanes (Indispensables)
     "AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA", "BRK.B", "JPM", "V",
     # Semiconductores (Tu zona de mayor profit)
@@ -210,14 +210,15 @@ ACCIONES_VIP = [
     "APTV", "BWA", "ALV", "LEA", "MGA", "GT", "TEL", "APH", "GLW", "STX",
     "WDC", "HPQ", "HPE", "NTAP", "PSTG", "PURE", "ANET", "CSCO", "JNPR", "FFIV"
 ]
+# Eliminar duplicados manteniendo el orden original
+ACCIONES_VIP = list(dict.fromkeys(_ACCIONES_VIP_RAW))
 
 # ==============================
 # PARÁMETROS
 # ==============================
-CAPITAL_BASE = 1000
 RIESGO       = 0.10
 TP           = 0.03
-SL           = 0.003
+SL           = 0.015  # subido de 0.003 → evita stop-outs por ruido normal
 
 # ==============================
 # MARTINGALA
@@ -227,6 +228,16 @@ MAX_MARTINGALA   = 2
 MULT             = 2
 
 ET = pytz.timezone("America/New_York")
+
+
+def get_capital_base() -> float:
+    """Retorna el 5% del equity real de la cuenta (paper o live).
+    Si falla la llamada a la API usa $1000 como fallback seguro.
+    """
+    try:
+        return float(API.get_account().equity) * 0.05
+    except Exception:
+        return 1_000.0
 
 
 # ==============================
@@ -255,6 +266,16 @@ def mercado_abierto():
 # ==============================
 def ejecutar_orden(ticker, tipo, capital):
     global nivel_martingala
+
+    # ─── Verificar shortability antes de enviar PUT ────────────────────────
+    if tipo == "PUT":
+        try:
+            asset = API.get_asset(ticker)
+            if not asset.shortable:
+                print(f"⛔ {ticker} no es shortable, skip")
+                return
+        except Exception:
+            return
 
     try:
         precio = API.get_latest_trade(ticker).price
@@ -356,19 +377,37 @@ def ejecutar_estrategia():
 
             df_ind = calcular_todos(df)
             ultima = df_ind.iloc[-1]
-            rsi    = ultima.get("rsi", 50)
+
+            # Extraer todos los indicadores calculados
+            rsi          = ultima.get("rsi", 50)
+            vol_relativo = ultima.get("vol_relativo", 0)
+            macd_hist    = ultima.get("macd_hist", 0)
+            ema_20       = ultima.get("ema_20", 0)
+            ema_50       = ultima.get("ema_50", 0)
 
             if ticker in posiciones_set:
                 continue
 
-            if rsi > 65:
-                print(f"📈 CALL {ticker} | RSI={rsi:.2f}")
-                ejecutar_orden(ticker, "CALL", CAPITAL_BASE)
+            # ─── Filtro de volumen (requiere liquidez mínima) ───────────────
+            if vol_relativo < settings.VOL_MINIMO:
+                continue  # skip: volumen bajo → spread amplio, slippage alto
+
+            # ─── Confirmación de tendencia por EMAs ────────────────────────
+            tendencia_alcista = ema_20 > ema_50
+            tendencia_bajista = ema_20 < ema_50
+
+            capital = get_capital_base()  # 5% equity en cada ciclo
+
+            # ─── Señal CALL: RSI sobrecomprado + MACD positivo + EMA alcista ─
+            if rsi > settings.RSI_UMBRAL_CALL and macd_hist > 0 and tendencia_alcista:
+                print(f"📈 CALL {ticker} | RSI={rsi:.2f} | MACD_H={macd_hist:.4f} | Vol={vol_relativo:.2f}")
+                ejecutar_orden(ticker, "CALL", capital)
                 registrar_trade()  # contador de riesgo diario
 
-            elif rsi < 32:
-                print(f"📉 PUT {ticker} | RSI={rsi:.2f}")
-                ejecutar_orden(ticker, "PUT", CAPITAL_BASE)
+            # ─── Señal PUT: RSI sobrevendido + MACD negativo + EMA bajista ─
+            elif rsi < settings.RSI_UMBRAL_PUT and macd_hist < 0 and tendencia_bajista:
+                print(f"📉 PUT {ticker} | RSI={rsi:.2f} | MACD_H={macd_hist:.4f} | Vol={vol_relativo:.2f}")
+                ejecutar_orden(ticker, "PUT", capital)
                 registrar_trade()  # contador de riesgo diario
 
         except Exception as e:
