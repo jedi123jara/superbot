@@ -370,9 +370,9 @@ def ejecutar_estrategia():
 
             # Settings por ticker
             settings.PAR             = ticker
-            settings.RSI_UMBRAL_CALL = 65
-            settings.RSI_UMBRAL_PUT  = 32
-            settings.VOL_MINIMO      = 1.2
+            settings.RSI_UMBRAL_CALL = 60   # bajado de 65 → más señales CALL
+            settings.RSI_UMBRAL_PUT  = 38   # subido de 32 → más señales PUT
+            settings.VOL_MINIMO      = 1.0   # bajado de 1.2 → requiere menos liquidez
             settings.FILTRO_HORARIO  = False
 
             df_ind = calcular_todos(df)
@@ -398,13 +398,13 @@ def ejecutar_estrategia():
 
             capital = get_capital_base()  # 5% equity en cada ciclo
 
-            # ─── Señal CALL: RSI sobrecomprado + MACD positivo + EMA alcista ─
+            # ─── Señal CALL: RSI alto + MACD positivo + EMA alcista ─────────
             if rsi > settings.RSI_UMBRAL_CALL and macd_hist > 0 and tendencia_alcista:
                 print(f"📈 CALL {ticker} | RSI={rsi:.2f} | MACD_H={macd_hist:.4f} | Vol={vol_relativo:.2f}")
                 ejecutar_orden(ticker, "CALL", capital)
                 registrar_trade()  # contador de riesgo diario
 
-            # ─── Señal PUT: RSI sobrevendido + MACD negativo + EMA bajista ─
+            # ─── Señal PUT: RSI bajo + MACD negativo + EMA bajista ──────────
             elif rsi < settings.RSI_UMBRAL_PUT and macd_hist < 0 and tendencia_bajista:
                 print(f"📉 PUT {ticker} | RSI={rsi:.2f} | MACD_H={macd_hist:.4f} | Vol={vol_relativo:.2f}")
                 ejecutar_orden(ticker, "PUT", capital)
